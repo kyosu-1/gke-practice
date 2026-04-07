@@ -37,7 +37,7 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("echo server starting on :8080")
+		log.Printf("echo server v2 starting on :8080")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("server error: %v", err)
 		}
