@@ -262,12 +262,20 @@ PAT、SSH key、長寿命クレデンシャルは一切使用しない。
 
 ## Cost Estimate (Phase 1)
 
-| Item | Monthly (100h) | Always-on |
-|---|---|---|
-| e2-medium × 1 | ~$3.5 | ~$25 |
-| Disk 10GB | ~$0.4 | ~$0.4 |
-| Artifact Registry | ~$0 (少量) | ~$0 |
-| GCS (state) | ~$0 | ~$0 |
-| **Total** | **~$4** | **~$26** |
+ArgoCD + ESO + Image Updater + GKE システム Pod により、ノードは2台にオートスケールされる。
+
+| Item | Always-on |
+|---|---|
+| e2-medium × 2 (2 vCPU, 4GB RAM) | ~$49 |
+| Boot Disk 30GB × 2 (pd-standard) | ~$2.4 |
+| Artifact Registry | ~$0.1 |
+| GCS (tfstate) | ~$0 |
+| Secret Manager (5 secrets) | ~$0 |
+| **Total** | **~$52/月** |
 
 LB を使わない前提。kubectl port-forward で代用。
+
+### コスト削減
+
+- 使わない時: `gcloud container clusters resize gke-practice --num-nodes=0 --zone=asia-northeast1-a`
+- 完全削除: `./scripts/teardown.sh`
