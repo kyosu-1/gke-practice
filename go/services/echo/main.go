@@ -22,6 +22,7 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{
 		"message":  "hello",
 		"hostname": hostname,
+		"version":  "v1",
 	})
 }
 

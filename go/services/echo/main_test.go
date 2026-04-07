@@ -46,4 +46,7 @@ func TestHelloHandler(t *testing.T) {
 	if resp["hostname"] == "" {
 		t.Error("expected hostname to be non-empty")
 	}
+	if resp["version"] != "v1" {
+		t.Errorf("expected version v1, got %s", resp["version"])
+	}
 }
