@@ -1,10 +1,10 @@
-# ArgoCD v3.3.3
+# ArgoCD v3.3.6
 #
 # Bootstrap procedure (3 steps):
 #
 #   Step 1: ArgoCD + config
 #     kubectl create namespace argocd
-#     kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.3/manifests/install.yaml
+#     kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.6/manifests/install.yaml
 #     kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=300s
 #     kubectl apply -f argocd/config/argocd-cm-patch.yaml
 #     kubectl apply -f argocd/config/argocd-rbac-cm-patch.yaml

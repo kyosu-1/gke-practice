@@ -85,7 +85,7 @@ docker push asia-northeast1-docker.pkg.dev/gke-practice-kyosu/gke-practice/echo:
 ```bash
 kubectl create namespace argocd
 kubectl apply -n argocd \
-  -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.3/manifests/install.yaml
+  -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.6/manifests/install.yaml
 kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=300s
 ```
 
@@ -152,7 +152,7 @@ kubectl delete -f argocd/bootstrap/external-secrets.yaml
 
 # ArgoCD 自体を削除
 kubectl delete -n argocd \
-  -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.3/manifests/install.yaml
+  -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.6/manifests/install.yaml
 kubectl delete namespace argocd
 kubectl delete namespace external-secrets
 kubectl delete namespace dev
