@@ -1,0 +1,96 @@
+name: App CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'go/services/**'
+
+env:
+  REGION: asia-northeast1
+  REGISTRY: asia-northeast1-docker.pkg.dev/<YOUR_PROJECT_ID>/gke-practice
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      services: ${{ steps.changes.outputs.services }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed services
+        id: changes
+        run: |
+          SERVICES=$(git diff --name-only HEAD~1 HEAD \
+            | grep '^go/services/' | cut -d/ -f3 | sort -u \
+            | jq -R -s -c 'split("\n") | map(select(. != ""))')
+          echo "services=$SERVICES" >> "$GITHUB_OUTPUT"
+          echo "Changed services: $SERVICES"
+
+  test:
+    needs: detect
+    if: needs.detect.outputs.services != '[]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.detect.outputs.services) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Setup Go
+        uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
+        with:
+          go-version: '1.26'
+
+      - name: Test
+        working-directory: go/services/${{ matrix.service }}
+        run: go test -v ./...
+
+  build-and-push:
+    needs: [detect, test]
+    if: needs.detect.outputs.services != '[]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    strategy:
+      matrix:
+        service: ${{ fromJson(needs.detect.outputs.services) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          workload_identity_provider: 'projects/<YOUR_PROJECT_NUMBER>/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'github-actions@<YOUR_PROJECT_ID>.iam.gserviceaccount.com'
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker ${REGION}-docker.pkg.dev --quiet
+
+      - name: Build and Push
+        working-directory: go/services/${{ matrix.service }}
+        run: |
+          IMAGE_TAG=${GITHUB_SHA::7}
+          docker build --platform linux/amd64 -t ${REGISTRY}/${{ matrix.service }}:${IMAGE_TAG} .
+          docker push ${REGISTRY}/${{ matrix.service }}:${IMAGE_TAG}
+
+      - name: Update dev image tag
+        run: |
+          IMAGE_TAG=${GITHUB_SHA::7}
+          cd k8s/${{ matrix.service }}/overlays/dev
+          kustomize edit set image ${{ matrix.service }}=${REGISTRY}/${{ matrix.service }}:${IMAGE_TAG}
+          cd ../../../..
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add k8s/${{ matrix.service }}/overlays/dev/kustomization.yaml
+          git diff --cached --quiet || git commit -m "ci: update ${{ matrix.service }} dev image tag to ${IMAGE_TAG}" && git push
