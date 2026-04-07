@@ -8,7 +8,7 @@ resources:
 
 images:
   - name: echo
-    newName: asia-northeast1-docker.pkg.dev/<YOUR_PROJECT_ID>/gke-practice/echo
+    newName: asia-northeast1-docker.pkg.dev/gke-practice-kyosu/gke-practice/echo
     newTag: latest
 
 replicas:
