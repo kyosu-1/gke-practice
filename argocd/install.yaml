@@ -1,15 +1,25 @@
 # ArgoCD v3.3.3
-# Installed via: kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.3/manifests/install.yaml
-# This file documents the installation method. The actual manifests are applied directly from upstream.
 #
-# Bootstrap procedure:
-#   1. kubectl create namespace argocd
-#   2. kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.3/manifests/install.yaml
-#   3. kubectl apply -f argocd/applications/root.yaml
-#      → root Application が argocd/applications/ を監視し、全 Application を自動デプロイ
+# Bootstrap procedure (3 steps):
 #
-# App of Apps pattern:
-#   root.yaml              → argocd/applications/ ディレクトリを監視
-#   external-secrets.yaml  → ESO Helm chart (Secret Manager 連携)
-#   echo-dev.yaml          → echo service dev 環境
-#   echo-prod.yaml         → echo service prod 環境
+#   Step 1: ArgoCD + config
+#     kubectl create namespace argocd
+#     kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.3/manifests/install.yaml
+#     kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=300s
+#     kubectl apply -f argocd/config/argocd-cm-patch.yaml
+#     kubectl apply -f argocd/config/argocd-rbac-cm-patch.yaml
+#
+#   Step 2: ESO (CRD が必要なので先にデプロイ)
+#     kubectl apply -f argocd/bootstrap/external-secrets.yaml
+#     # ESO が Ready になるまで待つ
+#     kubectl wait --for=condition=available deployment -l app.kubernetes.io/name=external-secrets -n external-secrets --timeout=300s
+#
+#   Step 3: root Application (残り全て自動デプロイ)
+#     kubectl apply -f argocd/applications/root.yaml
+#     → infra (SecretStore, ExternalSecret)
+#     → echo-dev, echo-prod
+#
+# Directory structure:
+#   argocd/bootstrap/      手動で順番に適用 (ESO)
+#   argocd/applications/   root が自動管理 (infra, echo-dev, echo-prod)
+#   argocd/config/         ArgoCD 自身の設定 (手動 apply)

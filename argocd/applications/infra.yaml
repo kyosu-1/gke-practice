@@ -1,20 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: echo-dev
+  name: infra
   namespace: argocd
 spec:
   project: default
   source:
     repoURL: https://github.com/kyosu-1/gke-practice.git
     targetRevision: main
-    path: k8s/services/echo/overlays/dev
+    path: k8s/infra
   destination:
     server: https://kubernetes.default.svc
-    namespace: dev
+    namespace: argocd
   syncPolicy:
     automated:
-      prune: true
       selfHeal: true
     syncOptions:
       - CreateNamespace=true

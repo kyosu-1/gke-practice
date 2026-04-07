@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/kyosu-1/gke-practice.git
     targetRevision: main
-    path: k8s/echo/overlays/prod
+    path: k8s/services/echo/overlays/prod
   destination:
     server: https://kubernetes.default.svc
     namespace: prod
