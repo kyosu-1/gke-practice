@@ -20,6 +20,16 @@ spec:
               prefix: asia-northeast1-docker.pkg.dev
               api_url: https://asia-northeast1-docker.pkg.dev
               default: true
+              credentials: ext:/scripts/gcp-auth.sh
+              credsexpire: 55m
+        volumes:
+          - name: gcp-auth
+            configMap:
+              name: argocd-image-updater-gcp-auth
+              defaultMode: 0555
+        volumeMounts:
+          - name: gcp-auth
+            mountPath: /scripts
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
