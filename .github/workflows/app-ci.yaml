@@ -59,7 +59,7 @@ jobs:
     if: needs.detect.outputs.services != '[]'
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       id-token: write
     strategy:
       matrix:
@@ -83,15 +83,3 @@ jobs:
           IMAGE_TAG=${GITHUB_SHA::7}
           docker build --platform linux/amd64 -t ${REGISTRY}/${{ matrix.service }}:${IMAGE_TAG} .
           docker push ${REGISTRY}/${{ matrix.service }}:${IMAGE_TAG}
-
-      - name: Update dev image tag
-        run: |
-          IMAGE_TAG=${GITHUB_SHA::7}
-          OVERLAY_DIR=k8s/services/${{ matrix.service }}/overlays/dev
-          cd "${OVERLAY_DIR}"
-          kustomize edit set image ${{ matrix.service }}=${REGISTRY}/${{ matrix.service }}:${IMAGE_TAG}
-          cd "${GITHUB_WORKSPACE}"
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "${OVERLAY_DIR}/kustomization.yaml"
-          git diff --cached --quiet || (git commit -m "ci: update ${{ matrix.service }} dev image tag to ${IMAGE_TAG}" && git push)
