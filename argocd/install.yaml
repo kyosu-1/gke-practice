@@ -1,3 +1,15 @@
 # ArgoCD v3.3.3
 # Installed via: kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.3/manifests/install.yaml
 # This file documents the installation method. The actual manifests are applied directly from upstream.
+#
+# Bootstrap procedure:
+#   1. kubectl create namespace argocd
+#   2. kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.3/manifests/install.yaml
+#   3. kubectl apply -f argocd/applications/root.yaml
+#      → root Application が argocd/applications/ を監視し、全 Application を自動デプロイ
+#
+# App of Apps pattern:
+#   root.yaml              → argocd/applications/ ディレクトリを監視
+#   external-secrets.yaml  → ESO Helm chart (Secret Manager 連携)
+#   echo-dev.yaml          → echo service dev 環境
+#   echo-prod.yaml         → echo service prod 環境
