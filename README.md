@@ -69,17 +69,31 @@ gcloud container clusters get-credentials gke-practice --zone asia-northeast1-a
 kubectl get nodes  # Ready を確認
 ```
 
-### 5. GitHub OAuth App 作成 & シークレット保存
+### 5. GitHub Apps 作成 & シークレット保存
 
-1. [GitHub Settings > Developer settings > OAuth Apps](https://github.com/settings/developers) で OAuth App を作成
-   - Homepage URL: `https://localhost:8443`
-   - Authorization callback URL: `https://localhost:8443/api/dex/callback`
+#### 5a. ArgoCD OAuth App（ログイン用）
 
-2. シークレットを GCP Secret Manager に保存:
+[GitHub Settings > Developer settings > OAuth Apps](https://github.com/settings/developers) で作成:
+- Homepage URL: `https://localhost:8443`
+- Authorization callback URL: `https://localhost:8443/api/dex/callback`
 
 ```bash
 echo -n "<CLIENT_ID>" | gcloud secrets create argocd-github-client-id --data-file=-
 echo -n "<CLIENT_SECRET>" | gcloud secrets create argocd-github-client-secret --data-file=-
+```
+
+#### 5b. Image Updater GitHub App（イメージタグ自動更新用）
+
+[GitHub Settings > Developer settings > GitHub Apps](https://github.com/settings/apps/new) で作成:
+- App name: `gke-practice-image-updater`
+- Webhook: **Active のチェックを外す**
+- Repository permissions > Contents: **Read and write**
+- Install to `kyosu-1/gke-practice` のみ
+
+```bash
+echo -n "<APP_ID>" | gcloud secrets create argocd-image-updater-github-app-id --data-file=-
+echo -n "<INSTALLATION_ID>" | gcloud secrets create argocd-image-updater-github-app-installation-id --data-file=-
+gcloud secrets create argocd-image-updater-github-app-key --data-file=<PRIVATE_KEY>.pem
 ```
 
 ### 6. ArgoCD インストール & 設定
@@ -106,7 +120,17 @@ kubectl wait --for=condition=available deployment \
   -n external-secrets --timeout=300s
 ```
 
-### 8. root Application デプロイ (App of Apps)
+### 8. ArgoCD Image Updater デプロイ
+
+```bash
+kubectl apply -f argocd/bootstrap/image-updater.yaml
+
+kubectl wait --for=condition=available deployment \
+  -l app.kubernetes.io/name=argocd-image-updater \
+  -n argocd --timeout=300s
+```
+
+### 9. root Application デプロイ (App of Apps)
 
 ```bash
 kubectl apply -f argocd/applications/root.yaml
@@ -117,7 +141,7 @@ root が `argocd/applications/` 内の全 Application を自動デプロイ:
 - `echo-dev` → echo service dev 環境 (自動同期)
 - `echo-prod` → echo service prod 環境 (手動同期)
 
-### 9. ArgoCD 再起動 & 確認
+### 10. ArgoCD 再起動 & 確認
 
 ```bash
 # Secret 反映のため Dex と Server を再起動
@@ -135,6 +159,7 @@ kubectl port-forward svc/argocd-server -n argocd 8443:443
 
 ```bash
 kubectl delete -f argocd/applications/root.yaml
+kubectl delete -f argocd/bootstrap/image-updater.yaml
 kubectl delete -f argocd/bootstrap/external-secrets.yaml
 
 kubectl delete -n argocd \
@@ -150,6 +175,9 @@ kubectl delete namespace prod
 ```bash
 gcloud secrets delete argocd-github-client-id --quiet
 gcloud secrets delete argocd-github-client-secret --quiet
+gcloud secrets delete argocd-image-updater-github-app-id --quiet
+gcloud secrets delete argocd-image-updater-github-app-installation-id --quiet
+gcloud secrets delete argocd-image-updater-github-app-key --quiet
 ```
 
 ### 3. Terraform destroy

@@ -1,0 +1,32 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: argocd-image-updater-github-app
+  namespace: argocd
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: gcp-secret-manager
+    kind: ClusterSecretStore
+  target:
+    name: argocd-image-updater-github-app
+    creationPolicy: Owner
+    template:
+      engineVersion: v2
+      metadata:
+        labels:
+          app.kubernetes.io/part-of: argocd
+      data:
+        githubAppID: "{{ .appId }}"
+        githubAppInstallationID: "{{ .installationId }}"
+        githubAppPrivateKey: "{{ .privateKey }}"
+  data:
+    - secretKey: appId
+      remoteRef:
+        key: argocd-image-updater-github-app-id
+    - secretKey: installationId
+      remoteRef:
+        key: argocd-image-updater-github-app-installation-id
+    - secretKey: privateKey
+      remoteRef:
+        key: argocd-image-updater-github-app-key
