@@ -1,0 +1,3 @@
+# ArgoCD v3.3.3
+# Installed via: kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.3/manifests/install.yaml
+# This file documents the installation method. The actual manifests are applied directly from upstream.
