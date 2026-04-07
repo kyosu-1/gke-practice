@@ -4,13 +4,13 @@ kind: Kustomization
 namespace: dev
 
 resources:
-  - ../../base
+- ../../base
 
 images:
-  - name: echo
-    newName: asia-northeast1-docker.pkg.dev/gke-practice-kyosu/gke-practice/echo
-    newTag: latest
+- name: echo
+  newName: asia-northeast1-docker.pkg.dev/gke-practice-kyosu/gke-practice/echo
+  newTag: 5d21a23
 
 replicas:
-  - name: echo
-    count: 1
+- count: 1
+  name: echo
