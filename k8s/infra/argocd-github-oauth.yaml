@@ -1,4 +1,4 @@
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: argocd-github-oauth
@@ -12,13 +12,17 @@ spec:
     name: argocd-github-oauth
     creationPolicy: Owner
     template:
+      engineVersion: v2
       metadata:
         labels:
           app.kubernetes.io/part-of: argocd
+      data:
+        client-id: "{{ .clientId }}"
+        client-secret: "{{ .clientSecret }}"
   data:
-    - secretKey: client-id
+    - secretKey: clientId
       remoteRef:
         key: argocd-github-client-id
-    - secretKey: client-secret
+    - secretKey: clientSecret
       remoteRef:
         key: argocd-github-client-secret
