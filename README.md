@@ -69,27 +69,7 @@ gcloud container clusters get-credentials gke-practice --zone asia-northeast1-a
 kubectl get nodes  # Ready を確認
 ```
 
-### 5. echo イメージをビルド & プッシュ
-
-```bash
-gcloud auth configure-docker asia-northeast1-docker.pkg.dev --quiet
-
-cd go/services/echo
-docker build --platform linux/amd64 \
-  -t asia-northeast1-docker.pkg.dev/gke-practice-kyosu/gke-practice/echo:test .
-docker push asia-northeast1-docker.pkg.dev/gke-practice-kyosu/gke-practice/echo:test
-```
-
-### 6. ArgoCD インストール
-
-```bash
-kubectl create namespace argocd
-kubectl apply -n argocd \
-  -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.6/manifests/install.yaml
-kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=300s
-```
-
-### 7. GitHub OAuth 設定
+### 5. GitHub OAuth App 作成 & シークレット保存
 
 1. [GitHub Settings > Developer settings > OAuth Apps](https://github.com/settings/developers) で OAuth App を作成
    - Homepage URL: `https://localhost:8443`
@@ -102,14 +82,20 @@ echo -n "<CLIENT_ID>" | gcloud secrets create argocd-github-client-id --data-fil
 echo -n "<CLIENT_SECRET>" | gcloud secrets create argocd-github-client-secret --data-file=-
 ```
 
-3. ArgoCD の設定を適用:
+### 6. ArgoCD インストール & 設定
 
 ```bash
+kubectl create namespace argocd
+kubectl apply -n argocd \
+  -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.6/manifests/install.yaml
+kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=300s
+
+# GitHub OAuth + RBAC 設定
 kubectl apply -f argocd/config/argocd-cm-patch.yaml
 kubectl apply -f argocd/config/argocd-rbac-cm-patch.yaml
 ```
 
-### 8. External Secrets Operator (ESO) デプロイ
+### 7. External Secrets Operator (ESO) デプロイ
 
 ```bash
 kubectl apply -f argocd/bootstrap/external-secrets.yaml
@@ -120,7 +106,7 @@ kubectl wait --for=condition=available deployment \
   -n external-secrets --timeout=300s
 ```
 
-### 9. root Application デプロイ (App of Apps)
+### 8. root Application デプロイ (App of Apps)
 
 ```bash
 kubectl apply -f argocd/applications/root.yaml
@@ -131,10 +117,12 @@ root が `argocd/applications/` 内の全 Application を自動デプロイ:
 - `echo-dev` → echo service dev 環境 (自動同期)
 - `echo-prod` → echo service prod 環境 (手動同期)
 
-### 10. ArgoCD 再起動 & 確認
+### 9. ArgoCD 再起動 & 確認
 
 ```bash
-kubectl rollout restart deployment argocd-server -n argocd
+# Secret 反映のため Dex と Server を再起動
+kubectl rollout restart deployment argocd-dex-server argocd-server -n argocd
+kubectl wait --for=condition=available deployment/argocd-server -n argocd --timeout=120s
 
 # ArgoCD UI にアクセス
 kubectl port-forward svc/argocd-server -n argocd 8443:443
@@ -146,11 +134,9 @@ kubectl port-forward svc/argocd-server -n argocd 8443:443
 ### 1. ArgoCD Application 削除
 
 ```bash
-# ArgoCD が管理するリソースを先に削除
 kubectl delete -f argocd/applications/root.yaml
 kubectl delete -f argocd/bootstrap/external-secrets.yaml
 
-# ArgoCD 自体を削除
 kubectl delete -n argocd \
   -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.6/manifests/install.yaml
 kubectl delete namespace argocd
