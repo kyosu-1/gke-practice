@@ -155,48 +155,9 @@ kubectl port-forward svc/argocd-server -n argocd 8443:443
 
 ## Teardown (全リソース削除)
 
-### 1. ArgoCD Application 削除
-
 ```bash
-kubectl delete -f argocd/applications/root.yaml
-kubectl delete -f argocd/bootstrap/image-updater.yaml
-kubectl delete -f argocd/bootstrap/external-secrets.yaml
-
-kubectl delete -n argocd \
-  -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.6/manifests/install.yaml
-kubectl delete namespace argocd
-kubectl delete namespace external-secrets
-kubectl delete namespace dev
-kubectl delete namespace prod
+./scripts/teardown.sh
 ```
 
-### 2. GCP Secret Manager のシークレット削除
-
-```bash
-gcloud secrets delete argocd-github-client-id --quiet
-gcloud secrets delete argocd-github-client-secret --quiet
-gcloud secrets delete argocd-image-updater-github-app-id --quiet
-gcloud secrets delete argocd-image-updater-github-app-installation-id --quiet
-gcloud secrets delete argocd-image-updater-github-app-key --quiet
-```
-
-### 3. Terraform destroy
-
-```bash
-cd terraform
-terraform destroy
-```
-
-### 4. Terraform state バケット削除
-
-```bash
-gcloud storage rm -r gs://gke-practice-kyosu-tfstate
-```
-
-### 5. GCP プロジェクト削除 (オプション)
-
-```bash
-gcloud projects delete gke-practice-kyosu
-```
-
-全リソースが完全に削除されます。プロジェクト削除は30日間は復元可能です。
+ArgoCD Applications → Secret Manager → Terraform destroy → tfstate バケットを順番に削除します。
+プロジェクト自体を削除する場合は `gcloud projects delete gke-practice-kyosu` を実行（30日間復元可能）。
