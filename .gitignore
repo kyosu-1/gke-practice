@@ -2,7 +2,7 @@
 terraform/.terraform/
 terraform/*.tfstate
 terraform/*.tfstate.backup
-terraform/.terraform.lock.hcl
+# terraform/.terraform.lock.hcl はバージョン管理推奨のため gitignore しない
 
 # Go
 go/*/server
